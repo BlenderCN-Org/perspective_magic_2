@@ -44,14 +44,18 @@ def calc():
         return [x / total_steps * max_value for x in range(start, stop)]
 
     # Parameters ##############################
+    # -2
+    # -30
+    # 24
+    # 22
     empty_group_name = 'Group'
-    camera_angle_range = get_range(12, 120, 1)
-    empty_distance_range = get_range(50, 50, 1)
-    y_angle_range = range(-5, 3, 1)
-    z_angle_range = range(-20, -8, 1)
+    camera_angle_range = get_range(12, 120, 2,3)
+    empty_distance_range = get_range(25, 25, 8)
+    y_angle_range = range(-5, 0, 1)
+    z_angle_range = range(-30, 0, 1)
     y_angle_division = 1
     z_angle_division = 1
-    angle_example_amount = 0
+    angle_example_amount = None
     ###########################################
 
     # Global Variables
@@ -146,7 +150,7 @@ def calc():
             best_list = sorted(result_array, key=lambda unit: unit[3])
 
             for counter, best_result_of_angle in enumerate(best_list):
-                if counter is not angle_example_amount:
+                if counter is angle_example_amount:
                     break
 
                 # Visualize Total Loss
