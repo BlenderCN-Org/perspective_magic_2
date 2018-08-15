@@ -1,12 +1,14 @@
 import bpy
 import mathutils
 import math
+from math import radians
 import bmesh
 # import random as r
 import decimal
 from mathutils.geometry import intersect_line_plane
 from mathutils.geometry import intersect_line_line
 from mathutils import Vector
+from mathutils import Matrix
 from bpy.props import IntProperty, FloatProperty
 
 
@@ -34,10 +36,6 @@ def calc():
 
     # Parameters ##############################
     empty_group_name = 'Group'
-    # To Do
-    picture_scale = 1
-    picture_position = (0, 0)
-    # Done
     camera_angle_range = get_range(10, 120, 1)
     empty_distance_range = get_range(10, 40, 1)
     y_angle_range = range(-3, 3, 1)
@@ -47,158 +45,107 @@ def calc():
     # Global Variables
     frame = 0
 
+    # Get Camera Position
+    camera_position = bpy.context.scene.camera.location
+
+    # Get Objects in the Group
+    objects = bpy.data.groups[empty_group_name].objects
+
     for camera_angle in camera_angle_range:
+        # Set Camera Angle
+        bpy.context.scene.camera.data.angle = radians(camera_angle)
+
+        # Calculate Distance
+        distance = 1 / math.tan(bpy.context.scene.camera.data.angle / 2)
+
+        # Get Normal from Camera Origin to the target
+        center_vector = (get_camera_position(objects['Center'].location, distance) - camera_position).normalized()
+
         for empty_distance in empty_distance_range:
             # Get Best Angle
             result_array = []
             for y_angle in y_angle_range:
                 for z_angle in z_angle_range:
-
-                    # Get Active Camera
-                    camera = bpy.context.scene.camera.data
-
-                    # Set Random Camera Angle
-                    camera.angle = math.radians(camera_angle)
-
-                    # Get Distance from Camera Origin to Surface
-                    distance = 1 / math.tan(camera.angle / 2)
-
-                    # Get Objects in the Group
-                    objects = bpy.data.groups[empty_group_name].objects
-
-                    # Scale Everything
-                    # To Do
-                    # Translate Everything
-                    # To Do
-
-                    # Calculate World Location of the Center
-                    real_center = get_camera_position(objects['Center'].location, distance)
-
-                    # Camera Position, You can delete this line
-                    # Get Camera Position Somehow
-                    camera_position = Vector((0, -8, 0))
-
-                    # Get Normal from Camera Origin to the target
-                    center_vector = real_center - camera_position
-
                     # Calculate Empty Position
                     empty_position = camera_position + center_vector * empty_distance
-
-                    # Default Mirror Vector
-                    default_norm = Vector((1, 0, 0))
-
-                    # Rotate
-                    mat_rot_A = mathutils.Matrix.Rotation(math.radians(y_angle), 4, 'Y')
-                    mat_rot_B = mathutils.Matrix.Rotation(math.radians(z_angle), 4, 'Z')
-                    result = mat_rot_B * mat_rot_A
-
+                    # Rotation Matrix
+                    rm = Matrix.Rotation(radians(y_angle), 4, 'Y') * Matrix.Rotation(radians(z_angle), 4, 'Z')
                     # Get Mirror Normal
-                    normal = default_norm * result
+                    normal = Vector((1, 0, 0)) * rm
+                    # You Need to Tweak Somehow
                     normal = Vector((normal[0], -normal[1], -normal[2]))
 
-                    # Get Camera Plane Position and Normal
-                    camera_plane_position = Vector((0, -8 + distance, 0))
-                    camera_plane_normal = Vector((0, 1, 0))
-
-                    def get_ideal_position(name):
-                        # Get One Empty that Contains L and not Center
-                        main = objects[name + '.L'].location
-                        # Get One Empty that Contains R and not Center
-                        sub = objects[name + '.R'].location
-
-                        # Calculate Camera Position
-                        main_c = get_camera_position(main, distance)
-                        sub_c = get_camera_position(sub, distance)
-
-                        # I don't need
-                        loss_array = []
-
+                    def get_ideal_position(empty_name):
                         # Set Maximum Distance
                         max_distance = 1000
-
+                        # Calculate Camera Position
+                        main_c = get_camera_position(objects[empty_name + '.L'].location, distance)
+                        sub_c = get_camera_position(objects[empty_name + '.R'].location, distance)
                         # Vector to Target Point From Camera
-                        target_vector = sub_c - camera_position
-                        target_vector.normalize()
-                        target_vector = target_vector * max_distance
-
-                        # Get Unit Normal
-                        main_unit_normal = main_c - camera_position
-                        main_unit_normal.normalize()
-
-                        # Multiply Unit Normal and Calculate Position ##########################
-                        moved_position = camera_position + main_unit_normal * 0
-                        # Calculate the Mirrored Position
-                        mirrored_point_A = get_mirrored_vector(
-                            moved_position,
-                            empty_position,
-                            normal
+                        target_vector = (sub_c - camera_position).normalized() * max_distance
+                        # Get Line
+                        A = get_mirrored_vector(camera_position, empty_position, normal)
+                        B = get_mirrored_vector(
+                            camera_position + (main_c - camera_position).normalized() * max_distance,
+                            empty_position, normal
                         )
-                        ########################################################################
+                        # Calculate Intersection
+                        intersection = intersect_line_line(camera_position, target_vector, A, B)
+                        mirrored_intersection = get_mirrored_vector(Vector(intersection[1]), empty_position, normal)
+                        return mirrored_intersection, (Vector(intersection[1]) - Vector(intersection[0])).length
 
-                        # Multiply Unit Normal and Calculate Position ##########################
-                        moved_position = camera_position + main_unit_normal * max_distance
-                        # Calculate the Mirrored Position
-                        mirrored_point_B = get_mirrored_vector(
-                            moved_position,
-                            empty_position,
-                            normal
-                        )
-                        ########################################################################
-
-                        # Get Intersection #####################################################
-                        t_result = intersect_line_line(camera_position, target_vector, mirrored_point_A, mirrored_point_B)
-                        fff_result = get_mirrored_vector(
-                            Vector(t_result[1]),
-                            empty_position,
-                            normal
-                        )
-                        ########################################################################
-
-                        return fff_result.copy(), (Vector(t_result[1]) - Vector(t_result[0])).length
-
+                    # Calculate Closest Position on each Empty and Get Total Loss on the Angle #########################
                     position_array = []
                     total_loss = 0
-                    for tmp in objects:
-                        if tmp.name.endswith('.L'):
-                            name = tmp.name.replace('.L', '')
-                            final_t = get_ideal_position(name)
-                            total_loss += math.pow(final_t[1], 2)
-                            position_array.append(final_t[0])
+                    for t_object in objects:
+                        if t_object.name.endswith('.L'):
+                            name = t_object.name.replace('.L', '')
+                            idea_position = get_ideal_position(name)
+                            total_loss += math.pow(idea_position[1], 2)
+                            position_array.append(idea_position[0])
 
                     total_loss /= 2 * len(position_array)
                     result_array.append((y_angle, z_angle, position_array, total_loss))
+                    ###################################################################################################
 
-            # Sort Result on Every Possible Angle
-            real_final = sorted(result_array, key=lambda unit: unit[3])
+            ############################################################################################################
+            # Visualizing Section ######################################################################################
+            best_result_of_angle = sorted(result_array, key=lambda unit: unit[3])[0]
 
             # Visualize Total Loss
-            bpy.data.objects['bar'].location[2] = real_final[0][3] * 10000
-            bpy.data.objects['bar'].keyframe_insert(data_path="location", frame=frame)
+            bar = bpy.data.objects['bar']
+            bar.location[2] = best_result_of_angle[3] * 10000
+            # Save Camera Angle as Z Rotation
+            bar.rotation_euler[2] = math.radians(camera_angle)
+            bar.keyframe_insert(data_path="location", frame=frame)
+            bar.keyframe_insert(data_path="rotation_euler", frame=frame)
 
             # Move Center
             cd = bpy.data.objects['Center.dummy']
             cd.location = empty_position
             cd.rotation_euler[0] = 0
-            cd.rotation_euler[1] = math.radians(real_final[0][0])
-            cd.rotation_euler[2] = math.radians(real_final[0][1])
+            cd.rotation_euler[1] = math.radians(best_result_of_angle[0])
+            cd.rotation_euler[2] = math.radians(best_result_of_angle[1])
             cd.keyframe_insert(data_path="location", frame=frame)
             cd.keyframe_insert(data_path="rotation_euler", frame=frame)
 
             # Move Points
-            for i, unit in enumerate(real_final[0][2]):
-                tmp_obj = bpy.data.objects['tmp.' + str(i).rjust(3, '0')]
+            for number, unit in enumerate(best_result_of_angle[2]):
+                tmp_obj = bpy.data.objects['tmp.' + str(number).rjust(3, '0')]
                 tmp_obj.location = unit
                 tmp_obj.keyframe_insert(data_path="location", frame=frame)
 
+            # Display Result
             print('#' * 100)
             print('# FRAME : ', frame)
             print('# Parameters')
             print(camera_angle, empty_distance)
             print('# Best Angle and Total Loss (Times 10000)')
-            print(real_final[0][0], real_final[0][1], real_final[0][3] * 10000)
-
+            print(best_result_of_angle[0], best_result_of_angle[1], best_result_of_angle[3] * 10000)
 
             frame += 1
+            ############################################################################################################
+            ############################################################################################################
 
 if False:
     for i in range(0, len(bpy.context.selected_objects)):
@@ -212,9 +159,6 @@ if False:
     for i in range(0, len(bpy.context.selected_objects)):
         bpy.context.selected_objects[i].name += '.L'
 
-# Make empty bones that have same names with empties
-# tmp.000, tmp.001, tmp.002...
-# Move Bones to Corresponding Positions by Empty Name
 if False:
     for object in bpy.data.objects:
         if 'tmp.' in object.name:
@@ -240,8 +184,7 @@ class ModalOperator(bpy.types.Operator):
             if vert.select is True:
                 mat_world = obj.matrix_world
                 pos_world = mat_world * vert.co
-                tmp = pos_world - camera_position
-                tmp.normalize()
+                tmp = (pos_world - camera_position).normalized()
                 pos_world += tmp * distance
                 vert.co = mat_world.inverted() * pos_world
         bmesh.update_edit_mesh(mesh)
@@ -289,8 +232,7 @@ class ModalOperator(bpy.types.Operator):
                 if vert.select is True:
                     self.first_value = vert.co.copy()
                     pos_world = self.mat_world * vert.co
-                    self.tmp = pos_world - self.camera_position
-                    self.tmp.normalize()
+                    self.tmp = (pos_world - self.camera_position).normalized()
             context.window_manager.modal_handler_add(self)
             ############################################################
             return {'RUNNING_MODAL'}
