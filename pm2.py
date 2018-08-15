@@ -2,7 +2,8 @@ import bpy
 import mathutils
 import math
 import bmesh
-import random as r
+# import random as r
+import decimal
 from mathutils.geometry import intersect_line_plane
 from mathutils.geometry import intersect_line_line
 from mathutils import Vector
@@ -10,35 +11,48 @@ from bpy.props import IntProperty, FloatProperty
 
 
 def calc():
+    def drange(x, y, jump):
+        while x < y:
+            yield float(x)
+            x += decimal.Decimal(jump)
+
     def get_mirrored_vector(point, plane_position, plane_normal):
         """Get Mirrored Vector"""
         proj = intersect_line_plane(point, point + plane_normal, plane_position, plane_normal)
         mirrored_point = 2 * proj - point
         return mirrored_point
 
-    def get_camera_position(cl, distance):
-        a = Vector((2 * cl[0], 0, 2 * cl[2]))
+    def get_camera_position(location, distance):
+        a = Vector((2 * location[0], 0, 2 * location[2]))
         b = Vector((-1, -8 + distance, -1))
-        real_center = a + b
-        return real_center
+        return a + b
+
+    def get_range(total_steps, max_value, start=0, stop=None):
+        if stop is None:
+            stop = total_steps
+        return [x / total_steps * max_value for x in range(start, stop)]
 
     # Parameters ##############################
-    group_name = 'Group'
+    empty_group_name = 'Group'
+    # To Do
     picture_scale = 1
     picture_position = (0, 0)
+    # Done
+    camera_angle_range = get_range(10, 120, 1)
+    empty_distance_range = get_range(10, 40, 1)
+    y_angle_range = range(-3, 3, 1)
+    z_angle_range = range(-13, -7, 1)
     ###########################################
 
+    # Global Variables
     frame = 0
 
-    for camera_angle_t in range(5, 10):
-        camera_angle = camera_angle_t / 50 * 120
-        for empty_t in range(1, 10):
+    for camera_angle in camera_angle_range:
+        for empty_distance in empty_distance_range:
+            # Get Best Angle
             result_array = []
-            empty_distance = empty_t / 100 * 40
-            for y in range(-3, 3, 1):
-                for z in range(-13, -7, 1):
-                    y_angle = y
-                    z_angle = z
+            for y_angle in y_angle_range:
+                for z_angle in z_angle_range:
 
                     # Get Active Camera
                     camera = bpy.context.scene.camera.data
@@ -50,18 +64,15 @@ def calc():
                     distance = 1 / math.tan(camera.angle / 2)
 
                     # Get Objects in the Group
-                    objects = bpy.data.groups[group_name].objects
+                    objects = bpy.data.groups[empty_group_name].objects
 
                     # Scale Everything
+                    # To Do
                     # Translate Everything
-
-                    # Get Center Object
-                    cl = objects['Center'].location
+                    # To Do
 
                     # Calculate World Location of the Center
-                    # You can change this to function
-                    real_center = Vector((2 * cl[0], 0, 2 * cl[2])) + Vector(
-                        (-1, -8 + distance, -1))
+                    real_center = get_camera_position(objects['Center'].location, distance)
 
                     # Camera Position, You can delete this line
                     # Get Camera Position Somehow
@@ -80,11 +91,6 @@ def calc():
                     mat_rot_A = mathutils.Matrix.Rotation(math.radians(y_angle), 4, 'Y')
                     mat_rot_B = mathutils.Matrix.Rotation(math.radians(z_angle), 4, 'Z')
                     result = mat_rot_B * mat_rot_A
-
-                    # bpy.data.objects['Center.dummy'].location = empty_position
-                    # bpy.data.objects['Center.dummy'].rotation_euler[0] = result.to_euler('YZX')[0]
-                    # bpy.data.objects['Center.dummy'].rotation_euler[1] = result.to_euler('YZX')[1]
-                    # bpy.data.objects['Center.dummy'].rotation_euler[2] = result.to_euler('YZX')[2]
 
                     # Get Mirror Normal
                     normal = default_norm * result
@@ -215,16 +221,19 @@ def calc():
                 # Sort Result on Every Possible Angle
                 real_final = sorted(result_array, key=lambda unit: unit[3])
 
+                # Visualize Total Loss
                 bpy.data.objects['bar'].location[2] = real_final[0][3] * 10000
                 bpy.data.objects['bar'].keyframe_insert(data_path="location", frame=frame)
 
                 # Move Center
-                bpy.data.objects['Center.dummy'].location = empty_position
-                bpy.data.objects['Center.dummy'].rotation_euler[0] = 0
-                bpy.data.objects['Center.dummy'].rotation_euler[1] = math.radians(real_final[0][0])
-                bpy.data.objects['Center.dummy'].rotation_euler[2] = math.radians(real_final[0][1])
-                bpy.data.objects['Center.dummy'].keyframe_insert(data_path="location", frame=frame)
-                bpy.data.objects['Center.dummy'].keyframe_insert(data_path="rotation_euler", frame=frame)
+                cd = bpy.data.objects['Center.dummy']
+                cd.location = empty_position
+                cd.rotation_euler[0] = 0
+                cd.rotation_euler[1] = math.radians(real_final[0][0])
+                cd.rotation_euler[2] = math.radians(real_final[0][1])
+                cd.keyframe_insert(data_path="location", frame=frame)
+                cd.keyframe_insert(data_path="rotation_euler", frame=frame)
+
                 # Move Points
                 for i, unit in enumerate(real_final[0][2]):
                     fobj = bpy.data.objects['tmp.' + str(i).rjust(3, '0')]
