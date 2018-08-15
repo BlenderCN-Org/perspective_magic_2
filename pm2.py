@@ -4,7 +4,6 @@ from math import radians
 import bmesh
 # import random as r
 # import mathutils
-import decimal
 from mathutils.geometry import intersect_line_plane
 from mathutils.geometry import intersect_line_line
 from mathutils import Vector
@@ -12,12 +11,22 @@ from mathutils import Matrix
 from bpy.props import IntProperty, FloatProperty
 
 
-def calc():
-    def drange(x, y, jump):
-        while x < y:
-            yield float(x)
-            x += decimal.Decimal(jump)
+def move_empties_back(group_name):
+    for object in bpy.data.groups[group_name].objects:
+        zcord = None
+        xcord = 0
+        if object.name.endswith('.L'):
+            xcord = 0
+            zcord = 1 - int(object.name.split('.')[1]) * 0.02
+        elif object.name.endswith('.R'):
+            xcord = 0.02
+            zcord = 1 - int(object.name.split('.')[1]) * 0.02
+        else:
+            continue
 
+        object.location = Vector((xcord, 0, zcord))
+
+def calc():
     def get_mirrored_vector(point, plane_position, plane_normal):
         """Get Mirrored Vector"""
         proj = intersect_line_plane(point, point + plane_normal, plane_position, plane_normal)
@@ -36,10 +45,13 @@ def calc():
 
     # Parameters ##############################
     empty_group_name = 'Group'
-    camera_angle_range = get_range(10, 120, 2, 3)
-    empty_distance_range = get_range(30, 300, 1)
+    camera_angle_range = get_range(12, 120, 1)
+    empty_distance_range = get_range(50, 50, 1)
     y_angle_range = range(-5, 3, 1)
     z_angle_range = range(-20, -8, 1)
+    y_angle_division = 1
+    z_angle_division = 1
+    angle_example_amount = 0
     ###########################################
 
     # Global Variables
@@ -74,9 +86,9 @@ def calc():
             # Get Best Angle
             result_array = []
             for y_angle in y_angle_range:
-                # y_angle = y_angle / 10
+                y_angle = y_angle / y_angle_division
                 for z_angle in z_angle_range:
-                    # z_angle = z_angle / 10
+                    z_angle = z_angle / z_angle_division
                     # Rotation Matrix
                     rm = Matrix.Rotation(radians(y_angle), 4, 'Y') * Matrix.Rotation(radians(z_angle), 4, 'Z')
                     # Get Mirror Normal
@@ -133,7 +145,10 @@ def calc():
             # Visualizing Section ######################################################################################
             best_list = sorted(result_array, key=lambda unit: unit[3])
 
-            for best_result_of_angle in best_list:
+            for counter, best_result_of_angle in enumerate(best_list):
+                if counter is not angle_example_amount:
+                    break
+
                 # Visualize Total Loss
                 bar = bpy.data.objects['bar']
                 bar.location[2] = best_result_of_angle[3] * 10000
