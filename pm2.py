@@ -36,10 +36,10 @@ def calc():
 
     # Parameters ##############################
     empty_group_name = 'Group'
-    camera_angle_range = get_range(10, 120, 1) 
-    empty_distance_range = get_range(10, 100, 1)
-    y_angle_range = range(-3, 3, 1)
-    z_angle_range = range(-13, -7, 1)
+    camera_angle_range = get_range(10, 120, 2, 3)
+    empty_distance_range = get_range(30, 300, 1)
+    y_angle_range = range(-5, 3, 1)
+    z_angle_range = range(-16, -15, 1)
     ###########################################
 
     # Global Variables
@@ -74,7 +74,9 @@ def calc():
             # Get Best Angle
             result_array = []
             for y_angle in y_angle_range:
+                # y_angle = y_angle / 10
                 for z_angle in z_angle_range:
+                    # z_angle = z_angle / 10
                     # Rotation Matrix
                     rm = Matrix.Rotation(radians(y_angle), 4, 'Y') * Matrix.Rotation(radians(z_angle), 4, 'Z')
                     # Get Mirror Normal
@@ -99,7 +101,19 @@ def calc():
                         # Calculate Intersection
                         intersection = intersect_line_line(camera_position, target_vector, A, B)
                         mirrored_intersection = get_mirrored_vector(Vector(intersection[1]), empty_position, normal)
-                        return mirrored_intersection, (Vector(intersection[1]) - Vector(intersection[0])).length
+
+                        # Here, You have to get position on the screen
+                        insect = intersect_line_plane(
+                            camera_position,
+                            Vector(intersection[1]),
+                            Vector((0, -8 + distance, 0)),
+                            Vector((0, 1, 0))
+                        )
+                        # If it's not intersecting, just return ridiculous value
+                        if (insect is None):
+                            insect = Vector((100, 100 ,100))
+
+                        return mirrored_intersection, (insect - sub_c).length
 
                     # Calculate Closest Position on each Empty and Get Total Loss on the Angle #########################
                     position_array = []
@@ -117,7 +131,8 @@ def calc():
 
             ############################################################################################################
             # Visualizing Section ######################################################################################
-            best_result_of_angle = sorted(result_array, key=lambda unit: unit[3])[0]
+            best_list = sorted(result_array, key=lambda unit: unit[3])
+            best_result_of_angle = best_list[0]
 
             # Visualize Total Loss
             bar = bpy.data.objects['bar']
@@ -149,6 +164,9 @@ def calc():
             print(camera_angle, empty_distance)
             print('# Best Angle and Total Loss (Times 10000)')
             print(best_result_of_angle[0], best_result_of_angle[1], best_result_of_angle[3] * 10000)
+            print('# Ranking')
+            for unit in best_list:
+                print(unit[0],unit[1],unit[3])
 
             frame += 1
             ############################################################################################################
