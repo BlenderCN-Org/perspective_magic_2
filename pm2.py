@@ -4,6 +4,8 @@ import math
 import bmesh
 import random as r
 from mathutils.geometry import intersect_line_plane
+from mathutils.geometry import intersect_line_line
+from mathutils import Vector
 from bpy.props import IntProperty, FloatProperty
 
 
@@ -15,8 +17,8 @@ def calc():
         return mirrored_point
 
     def get_camera_position(cl, distance):
-        a = mathutils.Vector((2 * cl[0], 0, 2 * cl[2]))
-        b = mathutils.Vector((-1, -8 + distance, -1))
+        a = Vector((2 * cl[0], 0, 2 * cl[2]))
+        b = Vector((-1, -8 + distance, -1))
         real_center = a + b
         return real_center
 
@@ -24,15 +26,13 @@ def calc():
     group_name = 'Group'
     picture_scale = 1
     picture_position = (0, 0)
-    # camera_angle = 60
-    # empty_distance = 2
     ###########################################
 
     frame = 0
 
-    for camera_angle_t in range(5, 50):
+    for camera_angle_t in range(5, 10):
         camera_angle = camera_angle_t / 50 * 120
-        for empty_t in range(1, 50):
+        for empty_t in range(1, 10):
             result_array = []
             empty_distance = empty_t / 100 * 40
             for y in range(-3, 3, 1):
@@ -60,12 +60,12 @@ def calc():
 
                     # Calculate World Location of the Center
                     # You can change this to function
-                    real_center = mathutils.Vector((2 * cl[0], 0, 2 * cl[2])) + mathutils.Vector(
+                    real_center = Vector((2 * cl[0], 0, 2 * cl[2])) + Vector(
                         (-1, -8 + distance, -1))
 
                     # Camera Position, You can delete this line
                     # Get Camera Position Somehow
-                    camera_position = mathutils.Vector((0, -8, 0))
+                    camera_position = Vector((0, -8, 0))
 
                     # Get Normal from Camera Origin to the target
                     center_vector = real_center - camera_position
@@ -74,7 +74,7 @@ def calc():
                     empty_position = camera_position + center_vector * empty_distance
 
                     # Default Mirror Vector
-                    default_norm = mathutils.Vector((1, 0, 0))
+                    default_norm = Vector((1, 0, 0))
 
                     # Rotate
                     mat_rot_A = mathutils.Matrix.Rotation(math.radians(y_angle), 4, 'Y')
@@ -88,11 +88,11 @@ def calc():
 
                     # Get Mirror Normal
                     normal = default_norm * result
-                    normal = mathutils.Vector((normal[0], -normal[1], -normal[2]))
+                    normal = Vector((normal[0], -normal[1], -normal[2]))
 
                     # Get Camera Plane Position and Normal
-                    camera_plane_position = mathutils.Vector((0, -8 + distance, 0))
-                    camera_plane_normal = mathutils.Vector((0, 1, 0))
+                    camera_plane_position = Vector((0, -8 + distance, 0))
+                    camera_plane_normal = Vector((0, 1, 0))
 
                     def get_ideal_position(name):
                         # Get One Empty that Contains L and not Center
@@ -178,10 +178,9 @@ def calc():
                             ########################################################################
 
                             # Get Intersection #####################################################
-                            t_result = mathutils.geometry.intersect_line_line(camera_position, target_vector,
-                                                                              mirrored_point_A, mirrored_point_B)
+                            t_result = intersect_line_line(camera_position, target_vector, mirrored_point_A, mirrored_point_B)
                             fff_result = get_mirrored_vector(
-                                mathutils.Vector(t_result[1]),
+                                Vector(t_result[1]),
                                 empty_position,
                                 normal
                             )
@@ -189,7 +188,7 @@ def calc():
 
                             loss_array.append((
                                 fff_result.copy(),
-                                (mathutils.Vector(t_result[1]) - mathutils.Vector(t_result[0])).length
+                                (Vector(t_result[1]) - Vector(t_result[0])).length
                             ))
                             final = sorted(loss_array, key=lambda unit: unit[1])
                             return final
@@ -269,7 +268,7 @@ class ModalOperator(bpy.types.Operator):
 
     def move_vert_by_camera_norm(distance):
         obj = bpy.context.object
-        camera_position = mathutils.Vector((0, -8, 0))
+        camera_position = Vector((0, -8, 0))
 
         mesh = obj.data
         bm = bmesh.from_edit_mesh(mesh)
@@ -318,7 +317,7 @@ class ModalOperator(bpy.types.Operator):
             self.first_mouse_x = event.mouse_x
             ############################################################
             self.obj = bpy.context.object
-            self.camera_position = mathutils.Vector((0, -8, 0))
+            self.camera_position = Vector((0, -8, 0))
             self.mesh = self.obj.data
             self.bm = bmesh.from_edit_mesh(self.mesh)
             self.mat_world = self.obj.matrix_world
