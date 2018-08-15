@@ -39,7 +39,7 @@ def calc():
     camera_angle_range = get_range(10, 120, 2, 3)
     empty_distance_range = get_range(30, 300, 1)
     y_angle_range = range(-5, 3, 1)
-    z_angle_range = range(-16, -15, 1)
+    z_angle_range = range(-20, -8, 1)
     ###########################################
 
     # Global Variables
@@ -132,43 +132,45 @@ def calc():
             ############################################################################################################
             # Visualizing Section ######################################################################################
             best_list = sorted(result_array, key=lambda unit: unit[3])
-            best_result_of_angle = best_list[0]
 
-            # Visualize Total Loss
-            bar = bpy.data.objects['bar']
-            bar.location[2] = best_result_of_angle[3] * 10000
-            # Save Camera Angle as Z Rotation
-            bar.rotation_euler[2] = math.radians(camera_angle)
-            bar.keyframe_insert(data_path="location", frame=frame)
-            bar.keyframe_insert(data_path="rotation_euler", frame=frame)
+            for best_result_of_angle in best_list:
+                # Visualize Total Loss
+                bar = bpy.data.objects['bar']
+                bar.location[2] = best_result_of_angle[3] * 10000
+                # Save Camera Angle as Z Rotation
+                bar.rotation_euler[2] = math.radians(camera_angle)
+                bar.keyframe_insert(data_path="location", frame=frame)
+                bar.keyframe_insert(data_path="rotation_euler", frame=frame)
 
-            # Move Center
-            cd = bpy.data.objects['Center.dummy']
-            cd.location = empty_position
-            cd.rotation_euler[0] = 0
-            cd.rotation_euler[1] = math.radians(best_result_of_angle[0])
-            cd.rotation_euler[2] = math.radians(best_result_of_angle[1])
-            cd.keyframe_insert(data_path="location", frame=frame)
-            cd.keyframe_insert(data_path="rotation_euler", frame=frame)
+                # Move Center
+                cd = bpy.data.objects['Center.dummy']
+                cd.location = empty_position
+                cd.rotation_euler[0] = 0
+                cd.rotation_euler[1] = math.radians(best_result_of_angle[0])
+                cd.rotation_euler[2] = math.radians(best_result_of_angle[1])
+                cd.keyframe_insert(data_path="location", frame=frame)
+                cd.keyframe_insert(data_path="rotation_euler", frame=frame)
 
-            # Move Points
-            for number, unit in enumerate(best_result_of_angle[2]):
-                tmp_obj = bpy.data.objects['tmp.' + str(number).rjust(3, '0')]
-                tmp_obj.location = unit
-                tmp_obj.keyframe_insert(data_path="location", frame=frame)
+                # Move Points
+                for number, unit in enumerate(best_result_of_angle[2]):
+                    tmp_obj = bpy.data.objects['tmp.' + str(number).rjust(3, '0')]
+                    tmp_obj.location = unit
+                    tmp_obj.keyframe_insert(data_path="location", frame=frame)
 
-            # Display Result
+                # Display Result
+                print('#' * 100)
+                print('# FRAME : ', frame)
+                print('# Parameters')
+                print(camera_angle, empty_distance)
+                print('# Best Angle and Total Loss (Times 10000)')
+                print(best_result_of_angle[0], best_result_of_angle[1], best_result_of_angle[3] * 10000)
+
+                frame += 1
+
             print('#' * 100)
-            print('# FRAME : ', frame)
-            print('# Parameters')
-            print(camera_angle, empty_distance)
-            print('# Best Angle and Total Loss (Times 10000)')
-            print(best_result_of_angle[0], best_result_of_angle[1], best_result_of_angle[3] * 10000)
             print('# Ranking')
             for unit in best_list:
                 print(unit[0],unit[1],unit[3])
-
-            frame += 1
             ############################################################################################################
             ############################################################################################################
 
