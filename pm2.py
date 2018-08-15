@@ -1,9 +1,9 @@
 import bpy
-import mathutils
 import math
 from math import radians
 import bmesh
 # import random as r
+# import mathutils
 import decimal
 from mathutils.geometry import intersect_line_plane
 from mathutils.geometry import intersect_line_line
@@ -36,8 +36,8 @@ def calc():
 
     # Parameters ##############################
     empty_group_name = 'Group'
-    camera_angle_range = get_range(10, 120, 1)
-    empty_distance_range = get_range(10, 40, 1)
+    camera_angle_range = get_range(10, 120, 1) 
+    empty_distance_range = get_range(10, 100, 1)
     y_angle_range = range(-3, 3, 1)
     z_angle_range = range(-13, -7, 1)
     ###########################################
@@ -61,13 +61,20 @@ def calc():
         # Get Normal from Camera Origin to the target
         center_vector = (get_camera_position(objects['Center'].location, distance) - camera_position).normalized()
 
+        # Calculate Camera Positions of Empties
+        camera_position_array = {}
+        for t_object in objects:
+            if t_object.name.endswith('.L') or t_object.name.endswith('.R'):
+                camera_position_array[t_object.name] = get_camera_position(t_object.location, distance)
+
         for empty_distance in empty_distance_range:
+            # Calculate Empty Position
+            empty_position = camera_position + center_vector * empty_distance
+
             # Get Best Angle
             result_array = []
             for y_angle in y_angle_range:
                 for z_angle in z_angle_range:
-                    # Calculate Empty Position
-                    empty_position = camera_position + center_vector * empty_distance
                     # Rotation Matrix
                     rm = Matrix.Rotation(radians(y_angle), 4, 'Y') * Matrix.Rotation(radians(z_angle), 4, 'Z')
                     # Get Mirror Normal
@@ -78,9 +85,9 @@ def calc():
                     def get_ideal_position(empty_name):
                         # Set Maximum Distance
                         max_distance = 1000
-                        # Calculate Camera Position
-                        main_c = get_camera_position(objects[empty_name + '.L'].location, distance)
-                        sub_c = get_camera_position(objects[empty_name + '.R'].location, distance)
+                        # Get Empty Positions
+                        main_c = camera_position_array[empty_name + '.L']
+                        sub_c = camera_position_array[empty_name + '.R']
                         # Vector to Target Point From Camera
                         target_vector = (sub_c - camera_position).normalized() * max_distance
                         # Get Line
