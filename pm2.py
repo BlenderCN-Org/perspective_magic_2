@@ -110,140 +110,95 @@ def calc():
                         main_c = get_camera_position(main, distance)
                         sub_c = get_camera_position(sub, distance)
 
-                        if False:
-                            # Force Method
-                            loss_array = []
-                            for i in range(0, 5000):
-                                # Multiplyer
-                                main_distance = i * 0.02
+                        # I don't need
+                        loss_array = []
 
-                                # Get Unit Normal
-                                main_unit_normal = main_c - camera_position
-                                main_unit_normal.normalize()
+                        # Set Maximum Distance
+                        max_distance = 1000
 
-                                # Multiply Unit Normal and Calculate Position
-                                moved_position = camera_position + main_unit_normal * main_distance
+                        # Vector to Target Point From Camera
+                        target_vector = sub_c - camera_position
+                        target_vector.normalize()
+                        target_vector = target_vector * max_distance
 
-                                # Calculate the Mirrored Position
-                                mirrored_point = get_mirrored_vector(
-                                    moved_position,
-                                    empty_position,
-                                    normal
-                                )
+                        # Get Unit Normal
+                        main_unit_normal = main_c - camera_position
+                        main_unit_normal.normalize()
 
-                                # Get Intersection Position between Camera Plane and Camera to Mirrored Position
-                                insect = intersect_line_plane(camera_position, mirrored_point, camera_plane_position,
-                                                              camera_plane_normal)
+                        # Multiply Unit Normal and Calculate Position ##########################
+                        moved_position = camera_position + main_unit_normal * 0
+                        # Calculate the Mirrored Position
+                        mirrored_point_A = get_mirrored_vector(
+                            moved_position,
+                            empty_position,
+                            normal
+                        )
+                        ########################################################################
 
-                                if (insect is None):
-                                    continue
+                        # Multiply Unit Normal and Calculate Position ##########################
+                        moved_position = camera_position + main_unit_normal * max_distance
+                        # Calculate the Mirrored Position
+                        mirrored_point_B = get_mirrored_vector(
+                            moved_position,
+                            empty_position,
+                            normal
+                        )
+                        ########################################################################
 
-                                # Calculate distance between R and Mirroed Point
-                                result_distance = (insect - sub_c).length
+                        # Get Intersection #####################################################
+                        t_result = intersect_line_line(camera_position, target_vector, mirrored_point_A, mirrored_point_B)
+                        fff_result = get_mirrored_vector(
+                            Vector(t_result[1]),
+                            empty_position,
+                            normal
+                        )
+                        ########################################################################
 
-                                # Save
-                                loss_array.append((moved_position.copy(), result_distance))
+                        return fff_result.copy(), (Vector(t_result[1]) - Vector(t_result[0])).length
 
-                            final = sorted(loss_array, key=lambda unit: unit[1])
-                            return final
-
-                        else:
-                            loss_array = []
-
-                            # Set Maximum Distance
-                            max_distance = 1000
-                            min_distance = 0
-
-                            # Vector to Target Point From Camera
-                            target_vector = sub_c - camera_position
-                            target_vector.normalize()
-                            target_vector = target_vector * max_distance
-
-                            # Get Unit Normal
-                            main_unit_normal = main_c - camera_position
-                            main_unit_normal.normalize()
-
-                            # Multiply Unit Normal and Calculate Position ##########################
-                            moved_position = camera_position + main_unit_normal * 0
-                            # Calculate the Mirrored Position
-                            mirrored_point_A = get_mirrored_vector(
-                                moved_position,
-                                empty_position,
-                                normal
-                            )
-                            ########################################################################
-
-                            # Multiply Unit Normal and Calculate Position ##########################
-                            moved_position = camera_position + main_unit_normal * max_distance
-                            # Calculate the Mirrored Position
-                            mirrored_point_B = get_mirrored_vector(
-                                moved_position,
-                                empty_position,
-                                normal
-                            )
-                            ########################################################################
-
-                            # Get Intersection #####################################################
-                            t_result = intersect_line_line(camera_position, target_vector, mirrored_point_A, mirrored_point_B)
-                            fff_result = get_mirrored_vector(
-                                Vector(t_result[1]),
-                                empty_position,
-                                normal
-                            )
-                            ########################################################################
-
-                            loss_array.append((
-                                fff_result.copy(),
-                                (Vector(t_result[1]) - Vector(t_result[0])).length
-                            ))
-                            final = sorted(loss_array, key=lambda unit: unit[1])
-                            return final
-
-                    final_array = []
+                    position_array = []
                     total_loss = 0
                     for tmp in objects:
                         if tmp.name.endswith('.L'):
                             name = tmp.name.replace('.L', '')
                             final_t = get_ideal_position(name)
-                            # Square 2 Loss
-                            total_loss += math.pow(final_t[0][1], 2)
-                            # Average
-                            # total_loss += math.pow(final_t[0][1],1)
+                            total_loss += math.pow(final_t[1], 2)
+                            position_array.append(final_t[0])
 
-
-                            final_array.append(final_t)
-                    total_loss = total_loss / (2 * len(final_array))
-                    print(total_loss)
-
-                    position_array = [l[0][0] for l in final_array]
+                    total_loss /= 2 * len(position_array)
                     result_array.append((y_angle, z_angle, position_array, total_loss))
-            if True:
-                # Sort Result on Every Possible Angle
-                real_final = sorted(result_array, key=lambda unit: unit[3])
 
-                # Visualize Total Loss
-                bpy.data.objects['bar'].location[2] = real_final[0][3] * 10000
-                bpy.data.objects['bar'].keyframe_insert(data_path="location", frame=frame)
+            # Sort Result on Every Possible Angle
+            real_final = sorted(result_array, key=lambda unit: unit[3])
 
-                # Move Center
-                cd = bpy.data.objects['Center.dummy']
-                cd.location = empty_position
-                cd.rotation_euler[0] = 0
-                cd.rotation_euler[1] = math.radians(real_final[0][0])
-                cd.rotation_euler[2] = math.radians(real_final[0][1])
-                cd.keyframe_insert(data_path="location", frame=frame)
-                cd.keyframe_insert(data_path="rotation_euler", frame=frame)
+            # Visualize Total Loss
+            bpy.data.objects['bar'].location[2] = real_final[0][3] * 10000
+            bpy.data.objects['bar'].keyframe_insert(data_path="location", frame=frame)
 
-                # Move Points
-                for i, unit in enumerate(real_final[0][2]):
-                    fobj = bpy.data.objects['tmp.' + str(i).rjust(3, '0')]
-                    fobj.location = unit
-                    fobj.keyframe_insert(data_path="location", frame=frame)
+            # Move Center
+            cd = bpy.data.objects['Center.dummy']
+            cd.location = empty_position
+            cd.rotation_euler[0] = 0
+            cd.rotation_euler[1] = math.radians(real_final[0][0])
+            cd.rotation_euler[2] = math.radians(real_final[0][1])
+            cd.keyframe_insert(data_path="location", frame=frame)
+            cd.keyframe_insert(data_path="rotation_euler", frame=frame)
 
-                print(real_final[0][0], real_final[0][1], real_final[0][3])
-                frame += 1
-                print('FRAME : ', frame)
-                print('Loss : ', real_final[0][3] * 10000)
+            # Move Points
+            for i, unit in enumerate(real_final[0][2]):
+                tmp_obj = bpy.data.objects['tmp.' + str(i).rjust(3, '0')]
+                tmp_obj.location = unit
+                tmp_obj.keyframe_insert(data_path="location", frame=frame)
+
+            print('#' * 100)
+            print('# FRAME : ', frame)
+            print('# Parameters')
+            print(camera_angle, empty_distance)
+            print('# Best Angle and Total Loss (Times 10000)')
+            print(real_final[0][0], real_final[0][1], real_final[0][3] * 10000)
+
+
+            frame += 1
 
 if False:
     for i in range(0, len(bpy.context.selected_objects)):
