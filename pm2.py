@@ -43,11 +43,28 @@ def calc():
             stop = total_steps
         return [x / total_steps * max_value for x in range(start, stop)]
 
+    # Prerequisitions ####################################################
+    # First, You need to place empties
+    # name.001.L / name.002.R
+    # and Center
+    # And you have to make everithing Xray
+    # You have to add those empties to Group
+    # Place Active Camera on 0, -8, 0
+    # Place Object Called Deform(Optional)
+    # Place Center.dummy and bar
+    # And Place tmp
+
+
+    # Example Parameters #####################
+    best_result_preset = {
+        y_angle: -2,
+        z_angle: -30,
+        viewing_angle: 24,
+        center_distance: 22
+    }
+    ###########################################
+
     # Parameters ##############################
-    # -2
-    # -30
-    # 24
-    # 22
     empty_group_name = 'Group'
     camera_angle_range = get_range(12, 120, 2,3)
     empty_distance_range = get_range(25, 25, 8)
