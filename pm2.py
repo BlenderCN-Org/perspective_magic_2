@@ -237,20 +237,20 @@ class ModalOperator(bpy.types.Operator):
 
     # first_value = FloatProperty()
 
-    def move_vert_by_camera_norm(distance):
-        obj = bpy.context.object
-        camera_position = Vector((0, -8, 0))
-
-        mesh = obj.data
-        bm = bmesh.from_edit_mesh(mesh)
-        for vert in bm.verts:
-            if vert.select is True:
-                mat_world = obj.matrix_world
-                pos_world = mat_world * vert.co
-                tmp = (pos_world - camera_position).normalized()
-                pos_world += tmp * distance
-                vert.co = mat_world.inverted() * pos_world
-        bmesh.update_edit_mesh(mesh)
+    # def move_vert_by_camera_norm(distance):
+    #     obj = bpy.context.object
+    #     camera_position = Vector((0, -8, 0))
+    #
+    #     mesh = obj.data
+    #     bm = bmesh.from_edit_mesh(mesh)
+    #     for vert in bm.verts:
+    #         if vert.select is True:
+    #             mat_world = obj.matrix_world
+    #             pos_world = mat_world * vert.co
+    #             tmp = (pos_world - camera_position).normalized()
+    #             pos_world += tmp * distance
+    #             vert.co = mat_world.inverted() * pos_world
+    #     bmesh.update_edit_mesh(mesh)
 
     def modal(self, context, event):
         if event.type == 'MOUSEMOVE':
@@ -260,7 +260,8 @@ class ModalOperator(bpy.types.Operator):
             # context.object.location.x = self.first_value + delta * 0.01
             for vert in self.bm.verts:
                 if vert.select is True:
-                    pos_world = self.mat_world * self.first_value + self.tmp * delta * -0.0025
+                    rep = self.vert_array[vert.index]
+                    pos_world = self.mat_world * rep['first_value'] + rep['tmp'] * delta * -0.0025
                     vert.co = self.mat_world.inverted() * pos_world
             bmesh.update_edit_mesh(self.mesh)
             #############################################################
@@ -275,7 +276,7 @@ class ModalOperator(bpy.types.Operator):
             # Change Here ###############################################
             for vert in self.bm.verts:
                 if vert.select is True:
-                    vert.co = self.first_value
+                    vert.co = self.vert_array[vert.index]['first_value']
             bmesh.update_edit_mesh(self.mesh)
             #############################################################
             return {'CANCELLED'}
@@ -291,11 +292,18 @@ class ModalOperator(bpy.types.Operator):
             self.mesh = self.obj.data
             self.bm = bmesh.from_edit_mesh(self.mesh)
             self.mat_world = self.obj.matrix_world
+
+            self.vert_array = {}
+
             for vert in self.bm.verts:
                 if vert.select is True:
-                    self.first_value = vert.co.copy()
-                    pos_world = self.mat_world * vert.co
-                    self.tmp = (pos_world - self.camera_position).normalized()
+                    self.vert_array[vert.index] = {}
+                    self.vert_array[vert.index]['first_value'] = vert.co.copy()
+                    self.vert_array[vert.index]['pos_world'] = self.mat_world * vert.co
+                    self.vert_array[vert.index]['tmp'] = (self.vert_array[vert.index]['pos_world'] - self.camera_position).normalized()
+                    # self.first_value = vert.co.copy()
+                    # pos_world = self.mat_world * vert.co
+                    # self.tmp = (pos_world - self.camera_position).normalized()
             context.window_manager.modal_handler_add(self)
             ############################################################
             return {'RUNNING_MODAL'}
