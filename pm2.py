@@ -56,22 +56,23 @@ def calc():
 
 
     # Example Parameters #####################
-    best_result_preset = {
-        y_angle: -2,
-        z_angle: -30,
-        viewing_angle: 24,
-        center_distance: 22
-    }
+    # best_result_preset = {
+    #     y_angle: -2,
+    #     z_angle: -30,
+    #     viewing_angle: 24,
+    #     center_distance: 22
+    # }
     ###########################################
 
     # Parameters ##############################
     empty_group_name = 'Group'
     camera_angle_range = get_range(12, 120, 2,3)
-    empty_distance_range = get_range(25, 25, 8)
-    y_angle_range = range(-5, 0, 1)
-    z_angle_range = range(-30, 0, 1)
+    empty_distance_range = get_range(23, 23, 22)
+    y_angle_range = range(-20, 20, 1)
+    z_angle_range = range(-20, 20, 1)
     y_angle_division = 1
     z_angle_division = 1
+    # angle_example_amount = None
     angle_example_amount = None
     ###########################################
 
@@ -121,8 +122,8 @@ def calc():
                         # Set Maximum Distance
                         max_distance = 1000
                         # Get Empty Positions
-                        main_c = camera_position_array[empty_name + '.L']
-                        sub_c = camera_position_array[empty_name + '.R']
+                        main_c = camera_position_array[empty_name + '.R']
+                        sub_c = camera_position_array[empty_name + '.L']
                         # Vector to Target Point From Camera
                         target_vector = (sub_c - camera_position).normalized() * max_distance
                         # Get Line
@@ -134,7 +135,6 @@ def calc():
                         # Calculate Intersection
                         intersection = intersect_line_line(camera_position, target_vector, A, B)
                         mirrored_intersection = get_mirrored_vector(Vector(intersection[1]), empty_position, normal)
-
                         # Here, You have to get position on the screen
                         insect = intersect_line_plane(
                             camera_position,
@@ -152,8 +152,8 @@ def calc():
                     position_array = []
                     total_loss = 0
                     for t_object in objects:
-                        if t_object.name.endswith('.L'):
-                            name = t_object.name.replace('.L', '')
+                        if t_object.name.endswith('.R'):
+                            name = t_object.name.replace('.R', '')
                             idea_position = get_ideal_position(name)
                             total_loss += math.pow(idea_position[1], 2)
                             position_array.append(idea_position[0])
