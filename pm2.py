@@ -56,22 +56,23 @@ def calc():
 
 
     # Example Parameters #####################
-    best_result_preset = {
-        y_angle: -2,
-        z_angle: -30,
-        viewing_angle: 24,
-        center_distance: 22
-    }
+    # best_result_preset = {
+    #     y_angle: -2,
+    #     z_angle: -30,
+    #     viewing_angle: 24,
+    #     center_distance: 22
+    # }
     ###########################################
 
     # Parameters ##############################
     empty_group_name = 'Group'
     camera_angle_range = get_range(12, 120, 2,3)
-    empty_distance_range = get_range(25, 25, 8)
-    y_angle_range = range(-5, 0, 1)
-    z_angle_range = range(-30, 0, 1)
+    empty_distance_range = get_range(23, 23, 22)
+    y_angle_range = range(-20, 20, 1)
+    z_angle_range = range(-20, 20, 1)
     y_angle_division = 1
     z_angle_division = 1
+    # angle_example_amount = None
     angle_example_amount = None
     ###########################################
 
@@ -121,8 +122,8 @@ def calc():
                         # Set Maximum Distance
                         max_distance = 1000
                         # Get Empty Positions
-                        main_c = camera_position_array[empty_name + '.L']
-                        sub_c = camera_position_array[empty_name + '.R']
+                        main_c = camera_position_array[empty_name + '.R']
+                        sub_c = camera_position_array[empty_name + '.L']
                         # Vector to Target Point From Camera
                         target_vector = (sub_c - camera_position).normalized() * max_distance
                         # Get Line
@@ -134,7 +135,6 @@ def calc():
                         # Calculate Intersection
                         intersection = intersect_line_line(camera_position, target_vector, A, B)
                         mirrored_intersection = get_mirrored_vector(Vector(intersection[1]), empty_position, normal)
-
                         # Here, You have to get position on the screen
                         insect = intersect_line_plane(
                             camera_position,
@@ -152,8 +152,8 @@ def calc():
                     position_array = []
                     total_loss = 0
                     for t_object in objects:
-                        if t_object.name.endswith('.L'):
-                            name = t_object.name.replace('.L', '')
+                        if t_object.name.endswith('.R'):
+                            name = t_object.name.replace('.R', '')
                             idea_position = get_ideal_position(name)
                             total_loss += math.pow(idea_position[1], 2)
                             position_array.append(idea_position[0])
@@ -237,20 +237,20 @@ class ModalOperator(bpy.types.Operator):
 
     # first_value = FloatProperty()
 
-    def move_vert_by_camera_norm(distance):
-        obj = bpy.context.object
-        camera_position = Vector((0, -8, 0))
-
-        mesh = obj.data
-        bm = bmesh.from_edit_mesh(mesh)
-        for vert in bm.verts:
-            if vert.select is True:
-                mat_world = obj.matrix_world
-                pos_world = mat_world * vert.co
-                tmp = (pos_world - camera_position).normalized()
-                pos_world += tmp * distance
-                vert.co = mat_world.inverted() * pos_world
-        bmesh.update_edit_mesh(mesh)
+    # def move_vert_by_camera_norm(distance):
+    #     obj = bpy.context.object
+    #     camera_position = Vector((0, -8, 0))
+    #
+    #     mesh = obj.data
+    #     bm = bmesh.from_edit_mesh(mesh)
+    #     for vert in bm.verts:
+    #         if vert.select is True:
+    #             mat_world = obj.matrix_world
+    #             pos_world = mat_world * vert.co
+    #             tmp = (pos_world - camera_position).normalized()
+    #             pos_world += tmp * distance
+    #             vert.co = mat_world.inverted() * pos_world
+    #     bmesh.update_edit_mesh(mesh)
 
     def modal(self, context, event):
         if event.type == 'MOUSEMOVE':
@@ -260,7 +260,8 @@ class ModalOperator(bpy.types.Operator):
             # context.object.location.x = self.first_value + delta * 0.01
             for vert in self.bm.verts:
                 if vert.select is True:
-                    pos_world = self.mat_world * self.first_value + self.tmp * delta * -0.0005
+                    rep = self.vert_array[vert.index]
+                    pos_world = self.mat_world * rep['first_value'] + rep['tmp'] * delta * -0.0005
                     vert.co = self.mat_world.inverted() * pos_world
             bmesh.update_edit_mesh(self.mesh)
             #############################################################
@@ -275,7 +276,7 @@ class ModalOperator(bpy.types.Operator):
             # Change Here ###############################################
             for vert in self.bm.verts:
                 if vert.select is True:
-                    vert.co = self.first_value
+                    vert.co = self.vert_array[vert.index]['first_value']
             bmesh.update_edit_mesh(self.mesh)
             #############################################################
             return {'CANCELLED'}
@@ -291,11 +292,18 @@ class ModalOperator(bpy.types.Operator):
             self.mesh = self.obj.data
             self.bm = bmesh.from_edit_mesh(self.mesh)
             self.mat_world = self.obj.matrix_world
+
+            self.vert_array = {}
+
             for vert in self.bm.verts:
                 if vert.select is True:
-                    self.first_value = vert.co.copy()
-                    pos_world = self.mat_world * vert.co
-                    self.tmp = (pos_world - self.camera_position).normalized()
+                    self.vert_array[vert.index] = {}
+                    self.vert_array[vert.index]['first_value'] = vert.co.copy()
+                    self.vert_array[vert.index]['pos_world'] = self.mat_world * vert.co
+                    self.vert_array[vert.index]['tmp'] = (self.vert_array[vert.index]['pos_world'] - self.camera_position).normalized()
+                    # self.first_value = vert.co.copy()
+                    # pos_world = self.mat_world * vert.co
+                    # self.tmp = (pos_world - self.camera_position).normalized()
             context.window_manager.modal_handler_add(self)
             ############################################################
             return {'RUNNING_MODAL'}
