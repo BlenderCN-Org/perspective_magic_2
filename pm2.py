@@ -260,7 +260,7 @@ class ModalOperator(bpy.types.Operator):
             # context.object.location.x = self.first_value + delta * 0.01
             for vert in self.bm.verts:
                 if vert.select is True:
-                    pos_world = self.mat_world * self.first_value + self.tmp * delta * -0.0025
+                    pos_world = self.mat_world * self.first_value + self.tmp * delta * -0.0005
                     vert.co = self.mat_world.inverted() * pos_world
             bmesh.update_edit_mesh(self.mesh)
             #############################################################
