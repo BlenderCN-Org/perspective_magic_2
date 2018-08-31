@@ -66,10 +66,10 @@ def calc():
 
     # Parameters ##############################
     empty_group_name = 'Group'
-    camera_angle_range = get_range(12, 120, 2,3)
-    empty_distance_range = get_range(23, 23, 22)
-    y_angle_range = range(-20, 20, 1)
-    z_angle_range = range(-20, 20, 1)
+    camera_angle_range = [24]
+    empty_distance_range = [22]
+    y_angle_range = range(-20, 0, 1)
+    z_angle_range = range(-20, 0, 1)
     y_angle_division = 1
     z_angle_division = 1
     # angle_example_amount = None
