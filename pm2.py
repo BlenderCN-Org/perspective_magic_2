@@ -85,6 +85,91 @@ def calc():
     # Get Objects in the Group
     objects = bpy.data.groups[empty_group_name].objects
 
+    # Got to Edit Mode o Armature
+    scene = bpy.context.scene
+    scene.layers = [True] * 20  # Show all layers
+    bpy.ops.object.mode_set(mode='OBJECT')
+    bpy.ops.object.select_all(action='DESELECT')
+    scene.objects.active = bpy.data.objects['Armature']
+    scene.objects.active.select = True
+    bpy.ops.object.mode_set(mode='EDIT')
+    bpy.data.armatures['Armature'].edit_bones[0].head[0] = 10
+
+    # Move Everything to Default
+    for bone in bpy.data.armatures['Armature'].edit_bones:
+        bone.head = Vector((0, 0 , 0))
+        bone.tail = Vector((0, 0, 0.1))
+
+    # Move Edit Bones to the Position
+    for t_object in objects:
+        if t_object.name.endswith('.R'):
+            name = t_object.name.replace('.R', '').replace('aaa.', '')
+            bpy.data.armatures['Armature'].edit_bones['tmp.' + name].head = t_object.location
+            bpy.data.armatures['Armature'].edit_bones['tmp.' + name].tail = t_object.location + Vector((0,0,0.1))
+
+    # Go Back to Object Mode
+    bpy.ops.object.mode_set(mode='OBJECT')
+    bpy.ops.object.select_all(action='DESELECT')
+
+    try:
+        scene.objects.active = bpy.data.objects['Template.001']
+        scene.objects.active.select = True
+        bpy.ops.object.delete(use_global=False)
+    except:
+        print('ERROR')
+
+    bpy.ops.object.select_all(action='DESELECT')
+    scene.objects.active = bpy.data.objects['Template']
+    scene.objects.active.select = True
+    bpy.ops.object.duplicate_move(OBJECT_OT_duplicate={"linked": False, "mode": 'TRANSLATION'},
+                                  TRANSFORM_OT_translate={"value": (0, 0, 0), "constraint_axis": (False, False, False),
+                                                          "constraint_orientation": 'GLOBAL', "mirror": False,
+                                                          "proportional": 'DISABLED',
+                                                          "proportional_edit_falloff": 'SMOOTH', "proportional_size": 1,
+                                                          "snap": False, "snap_target": 'CLOSEST',
+                                                          "snap_point": (0, 0, 0), "snap_align": False,
+                                                          "snap_normal": (0, 0, 0), "gpencil_strokes": False,
+                                                          "texture_space": False, "remove_on_cancel": False,
+                                                          "release_confirm": False, "use_accurate": False})
+    bpy.ops.object.move_to_layer(layers=(
+    True, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False,
+    False, False, False, False))
+
+
+    bpy.ops.object.select_all(action='DESELECT')
+    scene.objects.active = bpy.data.objects['Template.001']
+    scene.objects.active.select = True
+    bpy.ops.object.mode_set(mode='EDIT')
+
+    mesh = bmesh.from_edit_mesh(bpy.context.object.data)
+
+    for v in mesh.verts:
+        v.select = False
+        print(v.index)
+        if v.index == 0:
+            v.select = True
+    bpy.ops.object.vertex_group_add()
+    bpy.context.object.vertex_groups.active.name = "aaa"
+    bpy.ops.object.vertex_group_assign()
+
+
+    for v in mesh.verts:
+        v.select = False
+        print(v.index)
+        if v.index == 1:
+            v.select = True
+    bpy.ops.object.vertex_group_add()
+    bpy.context.object.vertex_groups.active.name = "bbb"
+    bpy.ops.object.vertex_group_assign()
+
+
+    bpy.context.scene.objects.active = bpy.context.scene.objects.active
+
+
+
+    return 0
+
+
     for camera_angle in camera_angle_range:
         # Set Camera Angle
         bpy.context.scene.camera.data.angle = radians(camera_angle)
@@ -156,7 +241,7 @@ def calc():
                             name = t_object.name.replace('.R', '')
                             idea_position = get_ideal_position(name)
                             total_loss += math.pow(idea_position[1], 2)
-                            position_array.append(idea_position[0])
+                            position_array.append([name.replace('aaa.', ''), idea_position[0]])
 
                     total_loss /= 2 * len(position_array)
                     result_array.append((y_angle, z_angle, position_array, total_loss))
@@ -188,9 +273,10 @@ def calc():
                 cd.keyframe_insert(data_path="rotation_euler", frame=frame)
 
                 # Move Points
+                # You can delete Number later
                 for number, unit in enumerate(best_result_of_angle[2]):
-                    tmp_obj = bpy.data.objects['tmp.' + str(number).rjust(3, '0')]
-                    tmp_obj.location = unit
+                    tmp_obj = bpy.data.objects['tmp.' + str(unit[0]).rjust(3, '0')]
+                    tmp_obj.location = unit[1]
                     tmp_obj.keyframe_insert(data_path="location", frame=frame)
 
                 # Display Result
