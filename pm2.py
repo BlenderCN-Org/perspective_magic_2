@@ -284,10 +284,9 @@ def calc():
                     bpy.data.objects['Armature'].pose.bones['tmp.' + str(unit[0]).rjust(3, '0')].location[1] = tmp[2]
                     bpy.data.objects['Armature'].pose.bones['tmp.' + str(unit[0]).rjust(3, '0')].location[2] = -tmp[1]
                     bpy.data.objects['Armature'].pose.bones['tmp.' + str(unit[0]).rjust(3, '0')].keyframe_insert(data_path="location", frame=frame)
-
-                    tmp_obj = bpy.data.objects['tmp.' + str(unit[0]).rjust(3, '0')]
-                    tmp_obj.location = unit[1]
-                    tmp_obj.keyframe_insert(data_path="location", frame=frame)
+                    # tmp_obj = bpy.data.objects['tmp.' + str(unit[0]).rjust(3, '0')]
+                    # tmp_obj.location = unit[1]
+                    # tmp_obj.keyframe_insert(data_path="location", frame=frame)
 
                 # Display Result
                 print('#' * 100)
