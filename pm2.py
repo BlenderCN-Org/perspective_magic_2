@@ -43,6 +43,23 @@ def calc():
             stop = total_steps
         return [x / total_steps * max_value for x in range(start, stop)]
 
+    def move_empties_by_verticies():
+        mesh = bmesh.from_edit_mesh(bpy.context.object.data)
+        for v in mesh.verts:
+            world_cordinate = v.co
+            rm = Matrix.Rotation(bpy.data.objects['Center.dummy'].rotation_euler[1], 4, 'Y') * Matrix.Rotation(bpy.data.objects['Center.dummy'].rotation_euler[2], 4, 'Z')
+            normal = Vector((1, 0, 0)) * rm
+            normal = Vector((normal[0], -normal[1], -normal[2]))
+            mirrored_cordinate = get_mirrored_vector(world_cordinate, bpy.data.objects['Center.dummy'].location , normal)
+            print(world_cordinate, mirrored_cordinate)
+
+            # here calculate thingy like intersection point
+
+        pass
+
+    move_empties_by_verticies()
+    return 0
+
     # Prerequisitions ####################################################
     # First, You need to place empties
     # name.001.L / name.002.R
