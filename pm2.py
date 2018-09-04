@@ -135,7 +135,6 @@ def calc():
     True, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False,
     False, False, False, False))
 
-
     bpy.ops.object.select_all(action='DESELECT')
     scene.objects.active = bpy.data.objects['Template.001']
     scene.objects.active.select = True
@@ -143,32 +142,32 @@ def calc():
 
     mesh = bmesh.from_edit_mesh(bpy.context.object.data)
 
+    # In here, check the cordination of each verticies and find the corresponding bone
+    index_name = {}
     for v in mesh.verts:
-        v.select = False
-        print(v.index)
-        if v.index == 0:
-            v.select = True
-    bpy.ops.object.vertex_group_add()
-    bpy.context.object.vertex_groups.active.name = "aaa"
-    bpy.ops.object.vertex_group_assign()
+        index_num = v.index
+        bone_name = None
+        for bone in bpy.data.armatures['Armature'].bones:
+            distance = (bone.head - v.co).length
+            if distance < 0.01:
+                bone_name = bone.name
+        index_name[str(index_num)] = bone_name
 
-
-    for v in mesh.verts:
-        v.select = False
-        print(v.index)
-        if v.index == 1:
-            v.select = True
-    bpy.ops.object.vertex_group_add()
-    bpy.context.object.vertex_groups.active.name = "bbb"
-    bpy.ops.object.vertex_group_assign()
-
+    ################################################################
+    for i, v2 in enumerate(mesh.verts):
+        group_name = index_name[str(v2.index)]
+        i = 0
+        for v in mesh.verts:
+            v.select = False
+            print(v.index)
+            if v.index == v2.index:
+                v.select = True
+        bpy.ops.object.vertex_group_add()
+        bpy.context.object.vertex_groups.active.name = group_name
+        bpy.ops.object.vertex_group_assign()
+    ################################################################
 
     bpy.context.scene.objects.active = bpy.context.scene.objects.active
-
-
-
-    return 0
-
 
     for camera_angle in camera_angle_range:
         # Set Camera Angle
@@ -275,6 +274,12 @@ def calc():
                 # Move Points
                 # You can delete Number later
                 for number, unit in enumerate(best_result_of_angle[2]):
+                    tmp = unit[1] - bpy.data.objects['aaa.' + str(unit[0]).rjust(3, '0') + '.R'].location
+                    bpy.data.objects['Armature'].pose.bones['tmp.' + str(unit[0]).rjust(3, '0')].location[0] = tmp[0]
+                    bpy.data.objects['Armature'].pose.bones['tmp.' + str(unit[0]).rjust(3, '0')].location[1] = tmp[2]
+                    bpy.data.objects['Armature'].pose.bones['tmp.' + str(unit[0]).rjust(3, '0')].location[2] = -tmp[1]
+                    bpy.data.objects['Armature'].pose.bones['tmp.' + str(unit[0]).rjust(3, '0')].keyframe_insert(data_path="location", frame=frame)
+
                     tmp_obj = bpy.data.objects['tmp.' + str(unit[0]).rjust(3, '0')]
                     tmp_obj.location = unit[1]
                     tmp_obj.keyframe_insert(data_path="location", frame=frame)
