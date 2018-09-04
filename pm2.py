@@ -66,6 +66,9 @@ def calc():
 
     # Parameters ##############################
     empty_group_name = 'Group'
+    empty_group_important = 'Important'
+    empty_group_not_important = 'Not'
+
     camera_angle_range = [24]
     empty_distance_range = [22]
     y_angle_range = range(-20, 0, 1)
@@ -239,7 +242,9 @@ def calc():
                         if t_object.name.endswith('.R'):
                             name = t_object.name.replace('.R', '')
                             idea_position = get_ideal_position(name)
-                            total_loss += math.pow(idea_position[1], 2)
+                            if any([i.name == 'Important' for i in t_object.users_group]):
+                                total_loss += math.pow(idea_position[1], 2)
+
                             position_array.append([name.replace('aaa.', ''), idea_position[0]])
 
                     total_loss /= 2 * len(position_array)
